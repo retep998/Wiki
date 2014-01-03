@@ -147,7 +147,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="lodepng.cpp" />
+    <ClCompile Include="lodepng.cpp">
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
     <ClCompile Include="Wiki.cpp" />
   </ItemGroup>
   <ItemGroup>
