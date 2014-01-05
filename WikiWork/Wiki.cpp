@@ -343,10 +343,10 @@ namespace {
     }
 
     void update_tilesheet(string mod) {
-        auto ptext = base / path{"Tilesheet_" + mod + ".txt"};
+        auto ptext = base / path{"Tilesheet " + mod + ".txt"};
         auto praw = base / path{mod};
-        auto p32 = base / path{"Tilesheet_" + mod + "_32.png"};
-        auto p16 = base / path{"Tilesheet_" + mod + "_16.png"};
+        auto p32 = base / path{"Tilesheet " + mod + " 32.png"};
+        auto p16 = base / path{"Tilesheet " + mod + " 16.png"};
         auto intext = ifstream{ptext};
         auto entries = vector<array<string, 16>>{};
         auto lookup = map<string, pair<size_t, size_t>>{};
@@ -359,9 +359,6 @@ namespace {
             getline(intext, name);
             if (name.empty())
                 continue;
-            for (auto & c : name)
-                if (c == ' ')
-                    c = '_';
             auto it = lookup.find(name);
             if (it != lookup.end())
                 continue;
@@ -382,9 +379,6 @@ namespace {
             in.adjust32();
             p.replace_extension();
             name = p.filename();
-            for (auto & c : name)
-                if (c == ' ')
-                    c = '_';
             auto lit = lookup.find(name);
             auto x = size_t{}, y = size_t{};
             if (lit != lookup.end()) {
@@ -411,6 +405,7 @@ namespace {
                     entries.back().front() = name;
                 }
                 lookup.emplace(name, make_pair(x, y));
+                std::cout << x << ' ' << y << ' ' << name << std::endl;
             }
             if (y * 32 + 32 > img.height)
                 img.resize(32 * 16, y * 32 + 32);
@@ -433,10 +428,10 @@ namespace {
 }
 
 int main() {
+    string name;
+    std::cin >> name;
     auto t1 = std::chrono::high_resolution_clock::now();
-    //generate_everything();
-    //dump_thing(" Cell");
-    update_tilesheet("RC");
+    update_tilesheet(name);
     auto t2 = std::chrono::high_resolution_clock::now();
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << std::endl;
     return 0;
