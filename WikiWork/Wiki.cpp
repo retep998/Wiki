@@ -12,26 +12,38 @@
 #include <numeric>
 #include <deque>
 #include <iomanip>
+#include <regex>
 
 namespace {
 
     namespace sys = std::tr2::sys;
+    namespace chrono = std::chrono;
+    namespace regex_constants = std::regex_constants;
     using std::any_of;
+    using chrono::duration_cast;
+    using std::endl;
     using std::find_if;
     using std::getline;
     using sys::is_regular_file;
     using std::make_pair;
+    using std::regex_match;
     using std::array;
     using sys::directory_iterator;
+    using chrono::high_resolution_clock;
     using std::ifstream;
     using std::map;
+    using chrono::milliseconds;
     using std::ofstream;
     using std::pair;
     using sys::path;
+    using std::regex;
     using std::runtime_error;
     using std::size_t;
+    using std::smatch;
     using std::string;
     using std::vector;
+    using std::cin;
+    using std::cout;
 
     path base = R"(C:\Users\Peter\Minecraft\Wiki)";
 
@@ -405,7 +417,7 @@ namespace {
                     entries.back().front() = name;
                 }
                 lookup.emplace(name, make_pair(x, y));
-                std::cout << x << ' ' << y << ' ' << name << std::endl;
+                cout << x << ' ' << y << ' ' << name << endl;
             }
             if (y * 32 + 32 > img.height)
                 img.resize(32 * 16, y * 32 + 32);
@@ -425,14 +437,29 @@ namespace {
             }
         }
     }
+    void import_tilesheet(string mod) {
+        auto pin = base / path{"Raw " + mod + ".txt"};
+        auto in = ifstream{pin};
+        auto pout = base / path{"Tilesheet " + mod + ".txt"};
+        auto out = ofstream{pout};
+        auto line = string{};
+        auto reg = regex{"Edit[[:space:]]+[[:digit:]]+[[:space:]]+([^[:space:]].*[^[:space:]])[[:space:]]+[[:alnum:]]+[[:space:]]+([[:digit:]]+)[[:space:]]+([[:digit:]]+)[[:space:]]+16px, 32px", regex_constants::ECMAScript | regex_constants::optimize};
+        auto mat = smatch{};
+        while (in.good()) {
+            getline(in, line);
+            if (regex_match(line, mat, reg))
+                out << mat[2] << ' ' << mat[3] << ' ' << mat[1] << '\n';
+        }
+    }
 }
 
 int main() {
     string name;
-    std::cin >> name;
-    auto t1 = std::chrono::high_resolution_clock::now();
-    update_tilesheet(name);
-    auto t2 = std::chrono::high_resolution_clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << std::endl;
-    return 0;
+    cin >> name;
+    auto t1 = high_resolution_clock::now();
+    //update_tilesheet(name);
+    import_tilesheet(name);
+    auto t2 = high_resolution_clock::now();
+    cout << duration_cast<milliseconds>(t2 - t1).count() << endl;
+    return EXIT_SUCCESS;
 }
