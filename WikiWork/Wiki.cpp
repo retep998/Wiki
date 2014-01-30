@@ -451,15 +451,99 @@ namespace {
                 out << mat[2] << ' ' << mat[3] << ' ' << mat[1] << '\n';
         }
     }
+    void ascii() {
+        auto const chars = std::array<char, 96>{{0x20, 0x20, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2d, 0x2d, 0x5f, 0x5f, 0x5f, 0x5e, 0x5e, 0x5e, 0x5e, 0x5e, 0x5e, 0x5e, 0x5e, 0x22, 0x22, 0x22, 0x22, 0x7e, 0x7e, 0x7e, 0x7c, 0x7c, 0x28, 0x28, 0x28, 0x28, 0x3f, 0x3f, 0x3f, 0x3f, 0x21, 0x21, 0x21, 0x21, 0x31, 0x31, 0x31, 0x6f, 0x6f, 0x6e, 0x6e, 0x54, 0x54, 0x33, 0x33, 0x6a, 0x6a, 0x35, 0x35, 0x24, 0x24, 0x24, 0x53, 0x53, 0x34, 0x34, 0x50, 0x50, 0x4f, 0x4f, 0x45, 0x45, 0x55, 0x55, 0x44, 0x44, 0x44, 0x44, 0x44, 0x40, 0x40, 0x40, 0x40, 0x42, 0x42, 0x23, 0x23, 0x30, 0x30, 0x30, 0x30, 0x30}};
+        auto in = image("image.png");
+        auto const xratio = in.width / 79.;
+        auto const yratio = xratio * 1.5;
+        auto const height = static_cast<unsigned>(in.height / yratio);
+        auto grid = std::vector<double>{};
+        grid.resize(79u * height);
+        for (auto y = 0u; y < height; ++y) {
+            auto const yt = static_cast<unsigned>(y * yratio), yb = static_cast<unsigned>(y * yratio + yratio);
+            for (auto x = 0u; x < 79u; ++x) {
+                auto const xt = static_cast<unsigned>(x * xratio), xb = static_cast<unsigned>(x * xratio + xratio);
+                auto const total = (xb - xt) * (yb - yt);
+                auto sum = 0u;
+                for (auto yi = yt; yi < yb; ++yi) {
+                    for (auto xi = xt; xi < xb; ++xi) {
+                        auto const c = in.get(xi, yi);
+                        sum += c.r;
+                        sum += c.g;
+                        sum += c.b;
+                    }
+                }
+                grid[y * 79u + x] = static_cast<double>(sum) / total;
+            }
+        }
+        auto const small = *std::min_element(grid.cbegin(), grid.cend());
+        auto const big = *std::max_element(grid.cbegin(), grid.cend());
+        auto const mult = 1 / (big - small);
+        auto out = std::ofstream("image.txt");
+        for (auto y = 0u; y < height; ++y) {
+            for (auto x = 0u; x < 79u; ++x) {
+                auto const val = 96 * (grid[y * 79u + x] * mult - small);
+                out.put(chars[static_cast<unsigned>(val)]);
+            }
+            out.put('\n');
+        }
+    }
+    void print_ascii() {
+        auto out = std::ofstream("dump.txt");
+        for (unsigned char c = 0x20; c < 0x7f; ++c) {
+            std::cout.put(c);
+        }
+        std::cout.put('\n');
+        for (unsigned char c = 0x20; c < 0x7f; ++c) {
+            out << std::hex << "0x" << (int)c << ", ";
+        }
+        out.put('\n');
+    }
+    void calc_ascii() {
+        auto const chars = std::array<char, 95>{{0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d, 0x7e}};
+        auto vals = std::array<std::pair<unsigned, char>, 95>{};
+        auto img = image("chars.png");
+        for (auto i = 0u; i < 95u; ++i) {
+            auto const off = i * 8u;
+            auto sum = 0u;
+            for (auto x = off; x < off + 8u; ++x) {
+                for (auto y = 0u; y < 12u; ++y) {
+                    auto const c = img.get(x, y);
+                    sum += c.r ? 1 : 0;
+                }
+            }
+            vals[i].first = sum;
+            vals[i].second = chars[i];
+        }
+        std::sort(vals.begin(), vals.end(), [](std::pair<unsigned, char> const & a, std::pair<unsigned, char> const & b) {
+            return a.first < b.first;
+        });
+        auto out = std::ofstream("dump.txt");
+        auto const big = vals.back().first;
+        for (auto i = 0u; i < 96u; ++i) {
+            auto const num = static_cast<unsigned>(std::round(1. / 96 * i * big));
+            auto const it = std::lower_bound(vals.begin(), vals.end(), num, [](std::pair<unsigned, char> const & a, unsigned const & b) {
+                return a.first < b;
+            });
+            if (it == vals.end()) {
+                throw std::runtime_error{"This is bad"};
+            }
+            out << std::hex << "0x" << (int)it->second << ", ";
+        }
+        out << std::endl;
+    }
 }
 
 int main() {
-    string name;
-    cin >> name;
-    auto t1 = high_resolution_clock::now();
-    //update_tilesheet(name);
-    import_tilesheet(name);
-    auto t2 = high_resolution_clock::now();
-    cout << duration_cast<milliseconds>(t2 - t1).count() << endl;
+    //print_ascii();
+    //calc_ascii();
+    ascii();
+    //string name;
+    //cin >> name;
+    //auto t1 = high_resolution_clock::now();
+    ////update_tilesheet(name);
+    //import_tilesheet(name);
+    //auto t2 = high_resolution_clock::now();
+    //cout << duration_cast<milliseconds>(t2 - t1).count() << endl;
     return EXIT_SUCCESS;
 }
