@@ -49,7 +49,7 @@ namespace {
 
     struct color {
         color() = default;
-        color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) : r(r), g(g), b(b), a(a) {}
+        color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) : r(r), g(g), b(b), a(a) {}
         color(color const &) = default;
         color & operator=(color const &) = default;
         union {
@@ -451,39 +451,41 @@ namespace {
                 out << mat[2] << ' ' << mat[3] << ' ' << mat[1] << '\n';
         }
     }
-    void ascii() {
+    void ascii_old() {
         auto const chars = std::array<char, 96>{{0x20, 0x20, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2d, 0x2d, 0x5f, 0x5f, 0x5f, 0x5e, 0x5e, 0x5e, 0x5e, 0x5e, 0x5e, 0x5e, 0x5e, 0x22, 0x22, 0x22, 0x22, 0x7e, 0x7e, 0x7e, 0x7c, 0x7c, 0x28, 0x28, 0x28, 0x28, 0x3f, 0x3f, 0x3f, 0x3f, 0x21, 0x21, 0x21, 0x21, 0x31, 0x31, 0x31, 0x6f, 0x6f, 0x6e, 0x6e, 0x54, 0x54, 0x33, 0x33, 0x6a, 0x6a, 0x35, 0x35, 0x24, 0x24, 0x24, 0x53, 0x53, 0x34, 0x34, 0x50, 0x50, 0x4f, 0x4f, 0x45, 0x45, 0x55, 0x55, 0x44, 0x44, 0x44, 0x44, 0x44, 0x40, 0x40, 0x40, 0x40, 0x42, 0x42, 0x23, 0x23, 0x30, 0x30, 0x30, 0x30, 0x30}};
         auto in = image("image.png");
-        auto const xratio = in.width / 79.;
+        auto const width = 79u;
+        auto const xratio = static_cast<double>(in.width) / width;
         auto const yratio = xratio * 1.5;
         auto const height = static_cast<unsigned>(in.height / yratio);
         auto grid = std::vector<double>{};
-        grid.resize(79u * height);
+        grid.resize(width * height);
         for (auto y = 0u; y < height; ++y) {
             auto const yt = static_cast<unsigned>(y * yratio), yb = static_cast<unsigned>(y * yratio + yratio);
-            for (auto x = 0u; x < 79u; ++x) {
+            for (auto x = 0u; x < width; ++x) {
                 auto const xt = static_cast<unsigned>(x * xratio), xb = static_cast<unsigned>(x * xratio + xratio);
                 auto const total = (xb - xt) * (yb - yt);
-                auto sum = 0u;
+                auto sum = 0.;
                 for (auto yi = yt; yi < yb; ++yi) {
                     for (auto xi = xt; xi < xb; ++xi) {
                         auto const c = in.get(xi, yi);
-                        sum += c.r;
-                        sum += c.g;
-                        sum += c.b;
+                        auto const a = static_cast<double>(c.a);
+                        sum += c.r * a;
+                        sum += c.g * a;
+                        sum += c.b * a;
                     }
                 }
-                grid[y * 79u + x] = static_cast<double>(sum) / total;
+                grid[y * width + x] = sum / total;
             }
         }
         auto const small = *std::min_element(grid.cbegin(), grid.cend());
         auto const big = *std::max_element(grid.cbegin(), grid.cend());
-        auto const mult = 1 / (big - small);
+        auto const mult = 1. / (big - small);
         auto out = std::ofstream("image.txt");
         for (auto y = 0u; y < height; ++y) {
-            for (auto x = 0u; x < 79u; ++x) {
-                auto const val = 96 * (grid[y * 79u + x] * mult - small);
-                out.put(chars[static_cast<unsigned>(val)]);
+            for (auto x = 0u; x < width; ++x) {
+                auto const val = chars.size() * mult * (grid[y * width + x] - small);
+                out.put(chars[std::min(static_cast<unsigned>(chars.size()) - 1u, std::max(0u, static_cast<unsigned>(val)))]);
             }
             out.put('\n');
         }
@@ -532,18 +534,163 @@ namespace {
         }
         out << std::endl;
     }
+    namespace ascii {
+        struct entry {
+            color c;
+            uint8_t code;
+            uint8_t character;
+        };
+        struct char_entry {
+            uint8_t character;
+            uint8_t coverage;
+        };
+        std::array<char_entry, 95> const characters = {{{0x20, 0x0}, {0x2E, 0x6}, {0x60, 0x6}, {0x2D, 0x7}, {0x5F, 0x8}, {0x27, 0x8}, {0x2C, 0x8}, {0x5E, 0xC}, {0x3A, 0xC}, {0x3D, 0xC}, {0x22, 0xE}, {0x5C, 0xE}, {0x2B, 0xE}, {0x2F, 0xE}, {0x7E, 0xF}, {0x7C, 0x10}, {0x3B, 0x10}, {0x28, 0x12}, {0x29, 0x12}, {0x3C, 0x12}, {0x3E, 0x12}, {0x3F, 0x14}, {0x7D, 0x14}, {0x73, 0x14}, {0x25, 0x14}, {0x63, 0x14}, {0x7B, 0x14}, {0x21, 0x16}, {0x76, 0x16}, {0x69, 0x16}, {0x5B, 0x16}, {0x49, 0x16}, {0x7A, 0x16}, {0x78, 0x16}, {0x74, 0x16}, {0x5D, 0x16}, {0x31, 0x17}, {0x72, 0x17}, {0x6F, 0x18}, {0x6C, 0x18}, {0x2A, 0x18}, {0x65, 0x18}, {0x61, 0x18}, {0x6E, 0x19}, {0x75, 0x19}, {0x54, 0x1A}, {0x66, 0x1A}, {0x77, 0x1A}, {0x33, 0x1B}, {0x37, 0x1B}, {0x6A, 0x1C}, {0x4A, 0x1C}, {0x79, 0x1C}, {0x35, 0x1D}, {0x24, 0x1E}, {0x32, 0x1E}, {0x59, 0x1E}, {0x36, 0x1E}, {0x39, 0x1E}, {0x6D, 0x1E}, {0x43, 0x1E}, {0x4C, 0x1E}, {0x53, 0x1F}, {0x34, 0x20}, {0x71, 0x20}, {0x70, 0x20}, {0x6B, 0x20}, {0x67, 0x20}, {0x50, 0x21}, {0x64, 0x21}, {0x68, 0x21}, {0x46, 0x21}, {0x62, 0x21}, {0x4F, 0x22}, {0x58, 0x22}, {0x47, 0x22}, {0x56, 0x22}, {0x45, 0x23}, {0x5A, 0x23}, {0x55, 0x24}, {0x41, 0x24}, {0x44, 0x26}, {0x4B, 0x26}, {0x57, 0x26}, {0x38, 0x26}, {0x48, 0x26}, {0x40, 0x28}, {0x26, 0x28}, {0x52, 0x28}, {0x42, 0x29}, {0x51, 0x29}, {0x23, 0x2A}, {0x30, 0x2D}, {0x4D, 0x2D}, {0x4E, 0x2D}}};
+        std::array<color, 0x10> const colors = {{{0, 0, 0}, {128, 0, 0}, {0, 128, 0}, {128, 128, 0}, {0, 0, 128}, {128, 0, 128}, {0, 128, 128}, {192, 192, 192}, {128, 128, 128}, {255, 0, 0}, {0, 255, 0}, {255, 255, 0}, {0, 0, 255}, {255, 0, 255}, {0, 255, 255}, {255, 255, 255}}};
+        std::array<std::array<std::array<uint16_t, 0x100>, 0x100>, 0x100> grid = {};
+        std::array<entry, 95 * 0x100> entries = {};
+        unsigned diff(color const & a, color const & b) {
+            return std::abs(a.r - b.r) + std::abs(a.g - b.g) + std::abs(a.b - b.b);
+        }
+        bool sub_check(color const & coord, color const & col) {
+            auto & g = grid[coord.r][coord.g][coord.b];
+            auto & e = entries[g];
+            auto d1 = diff(e.c, coord);
+            auto d2 = diff(col, coord);
+            return d2 < d1;
+        }
+        bool sub_set(color const & coord, color const & col, uint16_t id) {
+            if (!sub_check(coord, col))
+                return false;
+            grid[coord.r][coord.g][coord.b] = id;
+            return true;
+        }
+        bool sub_z(color const & coord, color const & col, uint16_t id) {
+            if (!sub_check(coord, col))
+                return false;
+            for (int x = coord.b; x <= 255; ++x)
+                if (!sub_set({coord.r, coord.g, static_cast<uint8_t>(x)}, col, id))
+                    break;
+            for (int x = coord.b - 1; x >= 0; --x)
+                if (!sub_set({coord.r, coord.g, static_cast<uint8_t>(x)}, col, id))
+                    break;
+            return true;
+        }
+        bool sub_y(color const & coord, color const & col, uint16_t id) {
+            if (!sub_check(coord, col))
+                return false;
+            for (int x = coord.g; x <= 255; ++x)
+                if (!sub_z({coord.r, static_cast<uint8_t>(x), coord.b}, col, id))
+                    break;
+            for (int x = coord.g - 1; x >= 0; --x)
+                if (!sub_z({coord.r, static_cast<uint8_t>(x), coord.b}, col, id))
+                    break;
+            return true;
+        }
+        void sub_x(color const & coord, color const & col, uint16_t id) {
+            if (!sub_check(coord, col))
+                return;
+            for (int x = coord.r; x <= 255; ++x)
+                if (!sub_y({static_cast<uint8_t>(x), coord.g, coord.b}, col, id))
+                    break;
+            for (int x = coord.r - 1; x >= 0; --x)
+                if (!sub_y({static_cast<uint8_t>(x), coord.g, coord.b}, col, id))
+                    break;
+        }
+        void prepare_entries() {
+            auto id = 0;
+            auto chosen = {0, 7, 8, 15};
+            for (auto & a : characters) {
+                auto ratio = a.coverage / 96.;
+                auto iratio = 1 - ratio;
+                for (auto x = 0u; x < 0x10; ++x) {
+                    auto & b = colors[x];
+                    for (auto y = 0u; y < 0x10; ++y) {
+                        auto & c = colors[y];
+                        auto d = color{static_cast<uint8_t>(b.r * ratio + c.r * iratio), static_cast<uint8_t>(b.g * ratio + c.g * iratio), static_cast<uint8_t>(b.b * ratio + c.b * iratio)};
+                        auto code = x | (y << 4);
+                        entries[id++] = {d, code, a.character};
+                    }
+                }
+            }
+        }
+        void generate_grid() {
+            prepare_entries();
+            for (auto id = 0u; id < entries.size(); ++id) {
+                sub_x(entries[id].c, entries[id].c, id);
+            }
+            auto out = std::ofstream("map.bin", std::ios::binary);
+            for (auto & x : grid) {
+                for (auto & y : x) {
+                    for (auto & z : y) {
+                        out.write(reinterpret_cast<char *>(&z), 2);
+                    }
+                }
+            }
+        }
+        void convert() {
+            prepare_entries();
+            auto grid_in = std::ifstream("map.bin", std::ios::binary);
+            for (auto & x : grid) {
+                for (auto & y : x) {
+                    for (auto & z : y) {
+                        grid_in.read(reinterpret_cast<char *>(&z), 2);
+                    }
+                }
+            }
+            auto in = image("image.png");
+            unsigned width;
+            std::cin >> width;
+            auto const xratio = static_cast<double>(in.width) / width;
+            auto const yratio = xratio * 1.5;
+            auto const height = static_cast<unsigned>(in.height / yratio);
+            auto pixels = std::vector<uint16_t>{};
+            pixels.resize(width * height);
+            for (auto y = 0u; y < height; ++y) {
+                auto const yt = static_cast<unsigned>(y * yratio), yb = static_cast<unsigned>(y * yratio + yratio);
+                for (auto x = 0u; x < width; ++x) {
+                    auto const xt = static_cast<unsigned>(x * xratio), xb = static_cast<unsigned>(x * xratio + xratio);
+                    auto const total = 1. / ((xb - xt) * (yb - yt) * 255);
+                    auto r = 0., g = 0., b = 0.;
+                    for (auto yi = yt; yi < yb; ++yi) {
+                        for (auto xi = xt; xi < xb; ++xi) {
+                            auto const c = in.get(xi, yi);
+                            auto const a = static_cast<double>(c.a);
+                            r += c.r * a;
+                            g += c.g * a;
+                            b += c.b * a;
+                        }
+                    }
+                    auto c = color{static_cast<uint8_t>(r * total), static_cast<uint8_t>(g * total), static_cast<uint8_t>(b * total)};
+                    pixels[y * width + x] = grid[static_cast<uint8_t>(r * total)][static_cast<uint8_t>(g * total)][static_cast<uint8_t>(b * total)];
+                    auto & e = entries[pixels[y * width + x]];
+                    int a = 1 + 1;
+                }
+            }
+            auto out = std::ofstream("image.txt", std::ios::binary);
+            out << width << " " << height << std::endl;
+            for (auto y = 0u; y < height; ++y) {
+                for (auto x = 0u; x < width; ++x) {
+                    auto & e = entries[pixels[y * width + x]];
+                    out.put(e.code).put(e.character);
+                }
+            }
+        }
+    }
 }
 
 int main() {
     //print_ascii();
     //calc_ascii();
-    ascii();
+    //ascii();
+    //fancy_ascii();
     //string name;
     //cin >> name;
-    //auto t1 = high_resolution_clock::now();
     ////update_tilesheet(name);
     //import_tilesheet(name);
-    //auto t2 = high_resolution_clock::now();
-    //cout << duration_cast<milliseconds>(t2 - t1).count() << endl;
+    auto t1 = high_resolution_clock::now();
+    //ascii::generate_grid();
+    ascii::convert();
+    auto t2 = high_resolution_clock::now();
+    cout << duration_cast<milliseconds>(t2 - t1).count() << endl;
     return EXIT_SUCCESS;
 }

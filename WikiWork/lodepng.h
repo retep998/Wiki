@@ -26,7 +26,9 @@ distribution.
 #ifndef LODEPNG_H
 #define LODEPNG_H
 
+#ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
+#endif
 
 #include <string.h> /*for size_t*/
 
