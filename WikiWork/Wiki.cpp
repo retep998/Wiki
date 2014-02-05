@@ -490,50 +490,6 @@ namespace {
             out.put('\n');
         }
     }
-    void print_ascii() {
-        auto out = std::ofstream("dump.txt");
-        for (unsigned char c = 0x20; c < 0x7f; ++c) {
-            std::cout.put(c);
-        }
-        std::cout.put('\n');
-        for (unsigned char c = 0x20; c < 0x7f; ++c) {
-            out << std::hex << "0x" << (int)c << ", ";
-        }
-        out.put('\n');
-    }
-    void calc_ascii() {
-        auto const chars = std::array<char, 95>{{0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d, 0x7e}};
-        auto vals = std::array<std::pair<unsigned, char>, 95>{};
-        auto img = image("chars.png");
-        for (auto i = 0u; i < 95u; ++i) {
-            auto const off = i * 8u;
-            auto sum = 0u;
-            for (auto x = off; x < off + 8u; ++x) {
-                for (auto y = 0u; y < 12u; ++y) {
-                    auto const c = img.get(x, y);
-                    sum += c.r ? 1 : 0;
-                }
-            }
-            vals[i].first = sum;
-            vals[i].second = chars[i];
-        }
-        std::sort(vals.begin(), vals.end(), [](std::pair<unsigned, char> const & a, std::pair<unsigned, char> const & b) {
-            return a.first < b.first;
-        });
-        auto out = std::ofstream("dump.txt");
-        auto const big = vals.back().first;
-        for (auto i = 0u; i < 96u; ++i) {
-            auto const num = static_cast<unsigned>(std::round(1. / 96 * i * big));
-            auto const it = std::lower_bound(vals.begin(), vals.end(), num, [](std::pair<unsigned, char> const & a, unsigned const & b) {
-                return a.first < b;
-            });
-            if (it == vals.end()) {
-                throw std::runtime_error{"This is bad"};
-            }
-            out << std::hex << "0x" << (int)it->second << ", ";
-        }
-        out << std::endl;
-    }
     namespace ascii {
         struct entry {
             color c;
@@ -544,92 +500,108 @@ namespace {
             uint8_t character;
             uint8_t coverage;
         };
-        std::array<char_entry, 95> const characters = {{{0x20, 0x0}, {0x2E, 0x6}, {0x60, 0x6}, {0x2D, 0x7}, {0x5F, 0x8}, {0x27, 0x8}, {0x2C, 0x8}, {0x5E, 0xC}, {0x3A, 0xC}, {0x3D, 0xC}, {0x22, 0xE}, {0x5C, 0xE}, {0x2B, 0xE}, {0x2F, 0xE}, {0x7E, 0xF}, {0x7C, 0x10}, {0x3B, 0x10}, {0x28, 0x12}, {0x29, 0x12}, {0x3C, 0x12}, {0x3E, 0x12}, {0x3F, 0x14}, {0x7D, 0x14}, {0x73, 0x14}, {0x25, 0x14}, {0x63, 0x14}, {0x7B, 0x14}, {0x21, 0x16}, {0x76, 0x16}, {0x69, 0x16}, {0x5B, 0x16}, {0x49, 0x16}, {0x7A, 0x16}, {0x78, 0x16}, {0x74, 0x16}, {0x5D, 0x16}, {0x31, 0x17}, {0x72, 0x17}, {0x6F, 0x18}, {0x6C, 0x18}, {0x2A, 0x18}, {0x65, 0x18}, {0x61, 0x18}, {0x6E, 0x19}, {0x75, 0x19}, {0x54, 0x1A}, {0x66, 0x1A}, {0x77, 0x1A}, {0x33, 0x1B}, {0x37, 0x1B}, {0x6A, 0x1C}, {0x4A, 0x1C}, {0x79, 0x1C}, {0x35, 0x1D}, {0x24, 0x1E}, {0x32, 0x1E}, {0x59, 0x1E}, {0x36, 0x1E}, {0x39, 0x1E}, {0x6D, 0x1E}, {0x43, 0x1E}, {0x4C, 0x1E}, {0x53, 0x1F}, {0x34, 0x20}, {0x71, 0x20}, {0x70, 0x20}, {0x6B, 0x20}, {0x67, 0x20}, {0x50, 0x21}, {0x64, 0x21}, {0x68, 0x21}, {0x46, 0x21}, {0x62, 0x21}, {0x4F, 0x22}, {0x58, 0x22}, {0x47, 0x22}, {0x56, 0x22}, {0x45, 0x23}, {0x5A, 0x23}, {0x55, 0x24}, {0x41, 0x24}, {0x44, 0x26}, {0x4B, 0x26}, {0x57, 0x26}, {0x38, 0x26}, {0x48, 0x26}, {0x40, 0x28}, {0x26, 0x28}, {0x52, 0x28}, {0x42, 0x29}, {0x51, 0x29}, {0x23, 0x2A}, {0x30, 0x2D}, {0x4D, 0x2D}, {0x4E, 0x2D}}};
-        std::array<color, 0x10> const colors = {{{0, 0, 0}, {128, 0, 0}, {0, 128, 0}, {128, 128, 0}, {0, 0, 128}, {128, 0, 128}, {0, 128, 128}, {192, 192, 192}, {128, 128, 128}, {255, 0, 0}, {0, 255, 0}, {255, 255, 0}, {0, 0, 255}, {255, 0, 255}, {0, 255, 255}, {255, 255, 255}}};
+        unsigned const num_chars = 5;
+        std::array<unsigned, num_chars> const chars = {{0x20, 0xb0, 0xb1, 0xb2, 0xdb}};
+        std::array<char_entry, num_chars> const characters = {{{0x20, 0x00}, {0xb0, 0x0c}, {0xb1, 0x18}, {0xb2, 0x24}, {0xdb, 0x30}}};
+        std::array<color, 0x10> const colors = {{{0x00, 0x00, 0x00}, {0x80, 0x00, 0x00}, {0x00, 0x80, 0x00}, {0x80, 0x80, 0x00}, {0x00, 0x00, 0x80}, {0x80, 0x00, 0x80}, {0x00, 0x80, 0x80}, {0xc0, 0xc0, 0xc0}, {0x80, 0x80, 0x80}, {0xff, 0x00, 0x00}, {0x00, 0xff, 0x00}, {0xff, 0xff, 0x00}, {0x00, 0x00, 0xff}, {0xff, 0x00, 0xff}, {0x00, 0xff, 0xff}, {0xff, 0xff, 0xff}}};
         std::array<std::array<std::array<uint16_t, 0x100>, 0x100>, 0x100> grid = {};
-        std::array<entry, 95 * 0x100> entries = {};
+        std::vector<entry> entries;
+        void print_chars() {
+            auto out = std::ofstream("chars.txt");
+            for (auto c : chars) {
+                out.put(c);
+            }
+            out.put('\n');
+            for (auto c : chars) {
+                out << std::hex << "0x" << (int)c << ", ";
+            }
+            out.put('\n');
+        }
+        void calc(unsigned w, unsigned h) {
+            auto vals = std::array<std::pair<unsigned, unsigned>, num_chars>{};
+            auto ws = std::to_string(w);
+            auto hs = std::to_string(h);
+            auto img = image("chars" + ws + "x" + hs + ".png");
+            for (auto i = 0u; i < num_chars; ++i) {
+                auto const off = i * w;
+                auto sum = 0u;
+                for (auto x = off; x < off + w; ++x) {
+                    for (auto y = 0u; y < h; ++y) {
+                        auto const c = img.get(x, y);
+                        sum += c.r ? 1 : 0;
+                    }
+                }
+                vals[i].first = sum;
+                vals[i].second = chars[i];
+            }
+            std::sort(vals.begin(), vals.end(), [](std::pair<unsigned, unsigned> const & a, std::pair<unsigned, unsigned> const & b) {
+                return a.first < b.first;
+            });
+            auto out = std::ofstream("chars" + ws + "x" + hs + ".txt");
+            out << std::setfill('0') << std::hex;
+            for (auto it : vals) {
+                out << "{0x" << std::setw(2) << it.second << ", 0x" << std::setw(2) << it.first << "}, ";
+            }
+            out << std::endl;
+        }
         unsigned diff(color const & a, color const & b) {
             return std::abs(a.r - b.r) + std::abs(a.g - b.g) + std::abs(a.b - b.b);
         }
-        bool sub_check(color const & coord, color const & col) {
-            auto & g = grid[coord.r][coord.g][coord.b];
-            auto & e = entries[g];
-            auto d1 = diff(e.c, coord);
-            auto d2 = diff(col, coord);
-            return d2 < d1;
-        }
-        bool sub_set(color const & coord, color const & col, uint16_t id) {
-            if (!sub_check(coord, col))
-                return false;
-            grid[coord.r][coord.g][coord.b] = id;
-            return true;
-        }
-        bool sub_z(color const & coord, color const & col, uint16_t id) {
-            if (!sub_check(coord, col))
-                return false;
-            for (int x = coord.b; x <= 255; ++x)
-                if (!sub_set({coord.r, coord.g, static_cast<uint8_t>(x)}, col, id))
-                    break;
-            for (int x = coord.b - 1; x >= 0; --x)
-                if (!sub_set({coord.r, coord.g, static_cast<uint8_t>(x)}, col, id))
-                    break;
-            return true;
-        }
-        bool sub_y(color const & coord, color const & col, uint16_t id) {
-            if (!sub_check(coord, col))
-                return false;
-            for (int x = coord.g; x <= 255; ++x)
-                if (!sub_z({coord.r, static_cast<uint8_t>(x), coord.b}, col, id))
-                    break;
-            for (int x = coord.g - 1; x >= 0; --x)
-                if (!sub_z({coord.r, static_cast<uint8_t>(x), coord.b}, col, id))
-                    break;
-            return true;
-        }
-        void sub_x(color const & coord, color const & col, uint16_t id) {
-            if (!sub_check(coord, col))
-                return;
-            for (int x = coord.r; x <= 255; ++x)
-                if (!sub_y({static_cast<uint8_t>(x), coord.g, coord.b}, col, id))
-                    break;
-            for (int x = coord.r - 1; x >= 0; --x)
-                if (!sub_y({static_cast<uint8_t>(x), coord.g, coord.b}, col, id))
-                    break;
-        }
         void prepare_entries() {
-            auto id = 0;
-            auto chosen = {0, 7, 8, 15};
+            //auto chosen = {0, 7, 8, 15};//Grayscale
+            auto chosen = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};//Full color
             for (auto & a : characters) {
-                auto ratio = a.coverage / 96.;
+                auto ratio = a.coverage / (6. * 8);
                 auto iratio = 1 - ratio;
-                for (auto x = 0u; x < 0x10; ++x) {
+                for (auto x : chosen) {
                     auto & b = colors[x];
-                    for (auto y = 0u; y < 0x10; ++y) {
+                    for (auto y : chosen) {
                         auto & c = colors[y];
                         auto d = color{static_cast<uint8_t>(b.r * ratio + c.r * iratio), static_cast<uint8_t>(b.g * ratio + c.g * iratio), static_cast<uint8_t>(b.b * ratio + c.b * iratio)};
                         auto code = x | (y << 4);
-                        entries[id++] = {d, code, a.character};
+                        bool found = false;
+                        for (auto & e : entries) {
+                            if (e.c == d) {
+                                found = true;
+                            }
+                        }
+                        if (!found) {
+                            entries.push_back({d, code, a.character});
+                        }
                     }
                 }
             }
         }
         void generate_grid() {
             prepare_entries();
-            for (auto id = 0u; id < entries.size(); ++id) {
-                sub_x(entries[id].c, entries[id].c, id);
-            }
-            auto out = std::ofstream("map.bin", std::ios::binary);
-            for (auto & x : grid) {
-                for (auto & y : x) {
-                    for (auto & z : y) {
-                        out.write(reinterpret_cast<char *>(&z), 2);
+            auto out = std::ofstream("map6x8.bin", std::ios::binary);
+            auto blah = color{0, 0, 0};
+            for (auto x = 0; x < 0x100; ++x) {
+                std::cout << '.';
+                for (auto y = 0; y < 0x100; ++y) {
+                    for (auto z = 0; z < 0x100; ++z) {
+                        auto && target = color{static_cast<uint8_t>(x), static_cast<uint8_t>(y), static_cast<uint8_t>(z)};
+                        auto bestd = 1024u;
+                        auto bestc = &blah;
+                        auto besti = uint16_t{0};
+                        for (auto i = uint16_t{0}; i < entries.size(); ++i) {
+                            auto & e = entries[i];
+                            auto & ec = e.c;
+                            auto const d = diff(ec, target);
+                            if (d < bestd) {
+                                bestd = d;
+                                bestc = &ec;
+                                besti = i;
+                            }
+                        }
+                        out.write(reinterpret_cast<char *>(&besti), 2);
                     }
                 }
             }
         }
-        void convert() {
+        void convert(unsigned const width, std::string name) {
             prepare_entries();
-            auto grid_in = std::ifstream("map.bin", std::ios::binary);
+            auto grid_in = std::ifstream("map6x8.bin", std::ios::binary);
             for (auto & x : grid) {
                 for (auto & y : x) {
                     for (auto & z : y) {
@@ -637,59 +609,69 @@ namespace {
                     }
                 }
             }
-            auto in = image("image.png");
-            unsigned width;
-            std::cin >> width;
+            auto in = image{name};
             auto const xratio = static_cast<double>(in.width) / width;
-            auto const yratio = xratio * 1.5;
+            auto const yratio = xratio * (8. / 6);
             auto const height = static_cast<unsigned>(in.height / yratio);
             auto pixels = std::vector<uint16_t>{};
             pixels.resize(width * height);
             for (auto y = 0u; y < height; ++y) {
-                auto const yt = static_cast<unsigned>(y * yratio), yb = static_cast<unsigned>(y * yratio + yratio);
+                auto const yt = static_cast<unsigned>(y * yratio), yb = static_cast<unsigned>((y + 1) * yratio);
                 for (auto x = 0u; x < width; ++x) {
-                    auto const xt = static_cast<unsigned>(x * xratio), xb = static_cast<unsigned>(x * xratio + xratio);
-                    auto const total = 1. / ((xb - xt) * (yb - yt) * 255);
-                    auto r = 0., g = 0., b = 0.;
+                    auto const xt = static_cast<unsigned>(x * xratio), xb = static_cast<unsigned>((x + 1) * xratio);
+                    auto const total = (xb - xt) * (yb - yt) * 255u;
+                    auto r = 0u, g = 0u, b = 0u;
                     for (auto yi = yt; yi < yb; ++yi) {
                         for (auto xi = xt; xi < xb; ++xi) {
                             auto const c = in.get(xi, yi);
-                            auto const a = static_cast<double>(c.a);
-                            r += c.r * a;
-                            g += c.g * a;
-                            b += c.b * a;
+                            r += c.r * c.a;
+                            g += c.g * c.a;
+                            b += c.b * c.a;
                         }
                     }
-                    auto c = color{static_cast<uint8_t>(r * total), static_cast<uint8_t>(g * total), static_cast<uint8_t>(b * total)};
-                    pixels[y * width + x] = grid[static_cast<uint8_t>(r * total)][static_cast<uint8_t>(g * total)][static_cast<uint8_t>(b * total)];
+                    pixels[y * width + x] = grid[static_cast<uint8_t>(r / total)][static_cast<uint8_t>(g / total)][static_cast<uint8_t>(b / total)];
                     auto & e = entries[pixels[y * width + x]];
-                    int a = 1 + 1;
                 }
             }
-            auto out = std::ofstream("image.txt", std::ios::binary);
-            out << width << " " << height << std::endl;
+            auto mapping = std::array<std::string, 0x100>{};
+            mapping[0x20] = {{0x20}};
+            mapping[0xb0] = {{-30, -106, -111}};
+            mapping[0xb1] = {{-30, -106, -110}};
+            mapping[0xb2] = {{-30, -106, -109}};
+            mapping[0xdb] = {{-30, -106, -120}};
+            auto out = std::ofstream("motd.txt", std::ios::binary);
             for (auto y = 0u; y < height; ++y) {
                 for (auto x = 0u; x < width; ++x) {
                     auto & e = entries[pixels[y * width + x]];
-                    out.put(e.code).put(e.character);
+                    out << "\x1b[" << (e.code & 0x80 ? "5" : "25");
+                    out << ";" << (e.code & 0x08 ? "1" : "21");
+                    out << ";" << static_cast<int>(((e.code & 0x70) >> 4) + 40);
+                    out << ";" << static_cast<int>((e.code & 0x07) + 30);
+                    out << "m" << mapping[e.character];
                 }
+                out << '\n';
             }
         }
     }
 }
 
-int main() {
-    //print_ascii();
-    //calc_ascii();
-    //ascii();
-    //fancy_ascii();
+int main(int argc, char ** argv) {
+    auto get_num = [] {
+        auto num = unsigned{};
+        std::cin >> num;
+        return num;
+    };
     //string name;
     //cin >> name;
     ////update_tilesheet(name);
     //import_tilesheet(name);
     auto t1 = high_resolution_clock::now();
+    //ascii::print_chars();
+    //ascii::calc(6, 8);
     //ascii::generate_grid();
-    ascii::convert();
+    if (argc > 1) {
+        ascii::convert(get_num(), argv[1]);
+    }
     auto t2 = high_resolution_clock::now();
     cout << duration_cast<milliseconds>(t2 - t1).count() << endl;
     return EXIT_SUCCESS;
