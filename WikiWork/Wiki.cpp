@@ -15,37 +15,21 @@
 #include <regex>
 
 namespace {
-
+    using namespace std;
     namespace sys = std::tr2::sys;
     namespace chrono = std::chrono;
     namespace regex_constants = std::regex_constants;
-    using std::any_of;
     using chrono::duration_cast;
-    using std::endl;
-    using std::find_if;
-    using std::getline;
-    using sys::is_regular_file;
-    using std::make_pair;
-    using std::regex_match;
-    using std::array;
-    using sys::directory_iterator;
     using chrono::high_resolution_clock;
-    using std::ifstream;
-    using std::map;
     using chrono::milliseconds;
-    using std::ofstream;
-    using std::pair;
     using sys::path;
-    using std::regex;
-    using std::runtime_error;
-    using std::size_t;
-    using std::smatch;
-    using std::string;
-    using std::vector;
-    using std::cin;
-    using std::cout;
 
-    path base = R"(C:\Users\Peter\Minecraft\Wiki)";
+#include "Materials.hpp"
+
+
+
+    path base{R"(C:\Users\retep998\Minecraft\Wiki)"};
+    path pbase{R"(C:\Users\retep998\Minecraft\Wiki)"};
 
     struct color {
         color() = default;
@@ -383,7 +367,7 @@ namespace {
         if (img.width < 32 * 16)
             img.resize(32 * 16, 32);
         auto in = image{};
-        for (auto it = directory_iterator{praw}; it != directory_iterator{}; ++it) {
+        for (auto it = sys::directory_iterator{praw}; it != sys::directory_iterator{}; ++it) {
             auto p = it->path();
             if (!is_regular_file(p) || p.extension() != ".png")
                 continue;
@@ -451,205 +435,116 @@ namespace {
                 out << mat[2] << ' ' << mat[3] << ' ' << mat[1] << '\n';
         }
     }
-    void ascii_old() {
-        auto const chars = std::array<char, 96>{{0x20, 0x20, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2d, 0x2d, 0x5f, 0x5f, 0x5f, 0x5e, 0x5e, 0x5e, 0x5e, 0x5e, 0x5e, 0x5e, 0x5e, 0x22, 0x22, 0x22, 0x22, 0x7e, 0x7e, 0x7e, 0x7c, 0x7c, 0x28, 0x28, 0x28, 0x28, 0x3f, 0x3f, 0x3f, 0x3f, 0x21, 0x21, 0x21, 0x21, 0x31, 0x31, 0x31, 0x6f, 0x6f, 0x6e, 0x6e, 0x54, 0x54, 0x33, 0x33, 0x6a, 0x6a, 0x35, 0x35, 0x24, 0x24, 0x24, 0x53, 0x53, 0x34, 0x34, 0x50, 0x50, 0x4f, 0x4f, 0x45, 0x45, 0x55, 0x55, 0x44, 0x44, 0x44, 0x44, 0x44, 0x40, 0x40, 0x40, 0x40, 0x42, 0x42, 0x23, 0x23, 0x30, 0x30, 0x30, 0x30, 0x30}};
-        auto in = image("image.png");
-        auto const width = 79u;
-        auto const xratio = static_cast<double>(in.width) / width;
-        auto const yratio = xratio * 1.5;
-        auto const height = static_cast<unsigned>(in.height / yratio);
-        auto grid = std::vector<double>{};
-        grid.resize(width * height);
-        for (auto y = 0u; y < height; ++y) {
-            auto const yt = static_cast<unsigned>(y * yratio), yb = static_cast<unsigned>(y * yratio + yratio);
-            for (auto x = 0u; x < width; ++x) {
-                auto const xt = static_cast<unsigned>(x * xratio), xb = static_cast<unsigned>(x * xratio + xratio);
-                auto const total = (xb - xt) * (yb - yt);
-                auto sum = 0.;
-                for (auto yi = yt; yi < yb; ++yi) {
-                    for (auto xi = xt; xi < xb; ++xi) {
-                        auto const c = in.get(xi, yi);
-                        auto const a = static_cast<double>(c.a);
-                        sum += c.r * a;
-                        sum += c.g * a;
-                        sum += c.b * a;
-                    }
-                }
-                grid[y * width + x] = sum / total;
+    void gather_greg_lang() {
+        auto plang = pbase / path{"GregTech.lang"};
+        auto pdump = pbase / path{"dump.txt"};
+        auto pmat = pbase / path{"materials.txt"};
+        regex reg1{R"(    S:item\.GregTech_MetaGenerated_Item_02\.([0-9]+).name=(.*))", regex_constants::ECMAScript};
+        regex reg2{R"raw([a-zA-Z0-9_]+\((-?[0-9]+).*"(.+)".*\))raw", regex_constants::ECMAScript};
+        string line;
+        ifstream flang{plang};
+        ofstream fdump{pdump};
+        ifstream fmat{pmat};
+        smatch mat;
+        map<int, string> items;
+        map<int, string> names;
+        while (getline(fmat, line)) {
+            if (regex_match(line, mat, reg2)) {
+                names[stoi(mat[1])] = mat[2];
             }
         }
-        auto const small = *std::min_element(grid.cbegin(), grid.cend());
-        auto const big = *std::max_element(grid.cbegin(), grid.cend());
-        auto const mult = 1. / (big - small);
-        auto out = std::ofstream("image.txt");
-        for (auto y = 0u; y < height; ++y) {
-            for (auto x = 0u; x < width; ++x) {
-                auto const val = chars.size() * mult * (grid[y * width + x] - small);
-                out.put(chars[std::min(static_cast<unsigned>(chars.size()) - 1u, std::max(0u, static_cast<unsigned>(val)))]);
+        while (getline(flang, line)) {
+            if (regex_match(line, mat, reg1)) {
+                items[stoi(mat[1])] = mat[2];
             }
-            out.put('\n');
+        }
+        auto num = 31000;
+        auto i1 = items.lower_bound(num);
+        auto i2 = items.lower_bound(num + 1000);
+        vector<pair<string, string>> results;
+        transform(i1, i2, back_inserter(results), [&](pair<const int, string> const & s) -> pair<string, string> {
+            return{s.second, names[s.first - num]};
+        });
+        sort(results.begin(), results.end(), [](pair<string, string> const & a, pair<string, string> const & b) {
+            return a.second < b.second;
+        });
+        fdump << R"(
+{{Navbox
+| title = 
+| name = 
+| list1 = )";
+        bool first{true};
+        for (auto & i : results) {
+            if (first) {
+                first = false;
+            } else {
+                fdump << "{{•}}";
+            }
+            fdump << "{{NI|mod=GT|" << i.first << "|" << i.second << "}}";
+        }
+        fdump << R"(
+}})";
+    }
+    void dump_material_names() {
+        auto pdump = pbase / path{"dump.txt"};
+        auto pmat = pbase / path{"materials.txt"};
+        regex reg1{R"raw(([a-zA-Z0-9_]+)\(([a-zA-Z0-9_]+), [truefals]+\))raw", regex_constants::ECMAScript};
+        regex reg2{R"raw(([a-zA-Z0-9_]+)\(.*"(.+)".*\))raw", regex_constants::ECMAScript};
+        ofstream fdump{pdump};
+        ifstream fmat{pmat};
+        string line;
+        smatch mat;
+        map<string, string> names;
+        map<string, string> renames;
+        struct material {
+            vector<string> names;
+
+        };
+        map<string, vector<string>> materials;
+        while (getline(fmat, line)) {
+            if (regex_match(line, mat, reg1)) {
+                renames[mat[1]] = mat[2];
+            } else if (regex_match(line, mat, reg2)) {
+                names[mat[1]] = mat[2];
+            }
+        }
+        for (auto & n : names) {
+            materials[n.second].push_back(n.first);
+        }
+        function<string(string)> lookup = [&](string const & s) {
+            auto it = names.find(s);
+            if (it != names.end()) {
+                return it->second;
+            }
+            return lookup(renames[s]);
+        };
+        for (auto & n : renames) {
+            materials[lookup(n.second)].push_back(n.first);
+        }
+        for (auto & n : materials) {
+            fdump << n.first << ": ";
+            for (auto & m : n.second) {
+                fdump << m;
+                if (m != n.second.back()) {
+                    fdump << ", ";
+                }
+            }
+            fdump << '\n';
         }
     }
-    namespace ascii {
-        struct entry {
-            color c;
-            uint8_t code;
-            uint8_t character;
-        };
-        struct char_entry {
-            uint8_t character;
-            uint8_t coverage;
-        };
-        unsigned const num_chars = 5;
-        std::array<unsigned, num_chars> const chars = {{0x20, 0xb0, 0xb1, 0xb2, 0xdb}};
-        std::array<char_entry, num_chars> const characters = {{{0x20, 0x00}, {0xb0, 0x0c}, {0xb1, 0x18}, {0xb2, 0x24}, {0xdb, 0x30}}};
-        std::array<color, 0x10> const colors = {{{0x00, 0x00, 0x00}, {0x80, 0x00, 0x00}, {0x00, 0x80, 0x00}, {0x80, 0x80, 0x00}, {0x00, 0x00, 0x80}, {0x80, 0x00, 0x80}, {0x00, 0x80, 0x80}, {0xc0, 0xc0, 0xc0}, {0x80, 0x80, 0x80}, {0xff, 0x00, 0x00}, {0x00, 0xff, 0x00}, {0xff, 0xff, 0x00}, {0x00, 0x00, 0xff}, {0xff, 0x00, 0xff}, {0x00, 0xff, 0xff}, {0xff, 0xff, 0xff}}};
-        std::array<std::array<std::array<uint16_t, 0x100>, 0x100>, 0x100> grid = {};
-        std::vector<entry> entries;
-        void print_chars() {
-            auto out = std::ofstream("chars.txt");
-            for (auto c : chars) {
-                out.put(c);
-            }
-            out.put('\n');
-            for (auto c : chars) {
-                out << std::hex << "0x" << (int)c << ", ";
-            }
-            out.put('\n');
-        }
-        void calc(unsigned w, unsigned h) {
-            auto vals = std::array<std::pair<unsigned, unsigned>, num_chars>{};
-            auto ws = std::to_string(w);
-            auto hs = std::to_string(h);
-            auto img = image("chars" + ws + "x" + hs + ".png");
-            for (auto i = 0u; i < num_chars; ++i) {
-                auto const off = i * w;
-                auto sum = 0u;
-                for (auto x = off; x < off + w; ++x) {
-                    for (auto y = 0u; y < h; ++y) {
-                        auto const c = img.get(x, y);
-                        sum += c.r ? 1 : 0;
-                    }
-                }
-                vals[i].first = sum;
-                vals[i].second = chars[i];
-            }
-            std::sort(vals.begin(), vals.end(), [](std::pair<unsigned, unsigned> const & a, std::pair<unsigned, unsigned> const & b) {
-                return a.first < b.first;
-            });
-            auto out = std::ofstream("chars" + ws + "x" + hs + ".txt");
-            out << std::setfill('0') << std::hex;
-            for (auto it : vals) {
-                out << "{0x" << std::setw(2) << it.second << ", 0x" << std::setw(2) << it.first << "}, ";
-            }
-            out << std::endl;
-        }
-        unsigned diff(color const & a, color const & b) {
-            return std::abs(a.r - b.r) + std::abs(a.g - b.g) + std::abs(a.b - b.b);
-        }
-        void prepare_entries() {
-            //auto chosen = {0, 7, 8, 15};//Grayscale
-            auto chosen = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};//Full color
-            for (auto & a : characters) {
-                auto ratio = a.coverage / (6. * 8);
-                auto iratio = 1 - ratio;
-                for (auto x : chosen) {
-                    auto & b = colors[x];
-                    for (auto y : chosen) {
-                        auto & c = colors[y];
-                        auto d = color{static_cast<uint8_t>(b.r * ratio + c.r * iratio), static_cast<uint8_t>(b.g * ratio + c.g * iratio), static_cast<uint8_t>(b.b * ratio + c.b * iratio)};
-                        auto code = x | (y << 4);
-                        bool found = false;
-                        for (auto & e : entries) {
-                            if (e.c == d) {
-                                found = true;
-                            }
-                        }
-                        if (!found) {
-                            entries.push_back({d, code, a.character});
-                        }
-                    }
-                }
-            }
-        }
-        void generate_grid() {
-            prepare_entries();
-            auto out = std::ofstream("map6x8.bin", std::ios::binary);
-            auto blah = color{0, 0, 0};
-            for (auto x = 0; x < 0x100; ++x) {
-                std::cout << '.';
-                for (auto y = 0; y < 0x100; ++y) {
-                    for (auto z = 0; z < 0x100; ++z) {
-                        auto && target = color{static_cast<uint8_t>(x), static_cast<uint8_t>(y), static_cast<uint8_t>(z)};
-                        auto bestd = 1024u;
-                        auto bestc = &blah;
-                        auto besti = uint16_t{0};
-                        for (auto i = uint16_t{0}; i < entries.size(); ++i) {
-                            auto & e = entries[i];
-                            auto & ec = e.c;
-                            auto const d = diff(ec, target);
-                            if (d < bestd) {
-                                bestd = d;
-                                bestc = &ec;
-                                besti = i;
-                            }
-                        }
-                        out.write(reinterpret_cast<char *>(&besti), 2);
-                    }
-                }
-            }
-        }
-        void convert(unsigned const width, std::string name) {
-            prepare_entries();
-            auto grid_in = std::ifstream("map6x8.bin", std::ios::binary);
-            for (auto & x : grid) {
-                for (auto & y : x) {
-                    for (auto & z : y) {
-                        grid_in.read(reinterpret_cast<char *>(&z), 2);
-                    }
-                }
-            }
-            auto in = image{name};
-            auto const xratio = static_cast<double>(in.width) / width;
-            auto const yratio = xratio * (8. / 6);
-            auto const height = static_cast<unsigned>(in.height / yratio);
-            auto pixels = std::vector<uint16_t>{};
-            pixels.resize(width * height);
-            for (auto y = 0u; y < height; ++y) {
-                auto const yt = static_cast<unsigned>(y * yratio), yb = static_cast<unsigned>((y + 1) * yratio);
-                for (auto x = 0u; x < width; ++x) {
-                    auto const xt = static_cast<unsigned>(x * xratio), xb = static_cast<unsigned>((x + 1) * xratio);
-                    auto const total = (xb - xt) * (yb - yt) * 255u;
-                    auto r = 0u, g = 0u, b = 0u;
-                    for (auto yi = yt; yi < yb; ++yi) {
-                        for (auto xi = xt; xi < xb; ++xi) {
-                            auto const c = in.get(xi, yi);
-                            r += c.r * c.a;
-                            g += c.g * c.a;
-                            b += c.b * c.a;
-                        }
-                    }
-                    pixels[y * width + x] = grid[static_cast<uint8_t>(r / total)][static_cast<uint8_t>(g / total)][static_cast<uint8_t>(b / total)];
-                    auto & e = entries[pixels[y * width + x]];
-                }
-            }
-            auto mapping = std::array<std::string, 0x100>{};
-            mapping[0x20] = {{0x20}};
-            mapping[0xb0] = {{-30, -106, -111}};
-            mapping[0xb1] = {{-30, -106, -110}};
-            mapping[0xb2] = {{-30, -106, -109}};
-            mapping[0xdb] = {{-30, -106, -120}};
-            auto out = std::ofstream("motd.txt", std::ios::binary);
-            for (auto y = 0u; y < height; ++y) {
-                for (auto x = 0u; x < width; ++x) {
-                    auto & e = entries[pixels[y * width + x]];
-                    out << "\x1b[" << (e.code & 0x80 ? "5" : "25");
-                    out << ";" << (e.code & 0x08 ? "1" : "21");
-                    out << ";" << static_cast<int>(((e.code & 0x70) >> 4) + 40);
-                    out << ";" << static_cast<int>((e.code & 0x07) + 30);
-                    out << "m" << mapping[e.character];
-                }
-                out << '\n';
+    void dump_colors() {
+        auto pdump = pbase / path{"dump.txt"};
+        auto pmat = pbase / path{"materials.txt"};
+        regex reg{R"raw([a-zA-Z0-9_]+\(-?[0-9]+, [a-zA-Z0-9_\.]+, (?[0-9]+), (?[0-9]+), (?[0-9]+), (?[0-9]+), ?[0-9]+, "(.+)".*))raw", regex_constants::ECMAScript};
+        ofstream fdump{pdump};
+        ifstream fmat{pmat};
+        string line;
+        smatch mat;
+        while (getline(fmat, line)) {
+            if (regex_match(line, mat, reg)) {
+                fdump << "Name: " << mat[5] << '\n';
+                fdump << "ID: " << mat[1] << '\n';
+                fdump << "Color: " << mat[2] << ", " << mat[3] << ", " << mat[4];
             }
         }
     }
@@ -661,18 +556,6 @@ int main(int argc, char ** argv) {
         std::cin >> num;
         return num;
     };
-    //string name;
-    //cin >> name;
-    ////update_tilesheet(name);
-    //import_tilesheet(name);
-    auto t1 = high_resolution_clock::now();
-    //ascii::print_chars();
-    //ascii::calc(6, 8);
-    //ascii::generate_grid();
-    if (argc > 1) {
-        ascii::convert(get_num(), argv[1]);
-    }
-    auto t2 = high_resolution_clock::now();
-    cout << duration_cast<milliseconds>(t2 - t1).count() << endl;
+    //dump_material_names();
     return EXIT_SUCCESS;
 }
