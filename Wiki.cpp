@@ -31,21 +31,22 @@ namespace {
     path base{R"(C:\Users\retep998\Minecraft\Wiki)"};
     path pbase{R"(C:\Users\retep998\Minecraft\Wiki)"};
 
+    template <typename T>
     struct color {
         color() = default;
-        color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) : r(r), g(g), b(b), a(a) {}
+        color(T p_r, T p_g, T p_b, T p_a) :
+            r{p_r}, g{p_g}, b{p_b}, a{p_a} {}
         color(color const &) = default;
         color & operator=(color const &) = default;
-        union {
-            struct {
-                uint8_t r, g, b, a;
-            };
-            uint32_t rgba;
-        };
-        bool operator==(color const & c) {
-            return rgba == c.rgba;
+        bool operator==(color const & p_other) const {
+            return r == o.r && g == o.g && b == o.b && a == o.a;
         }
+        T r, g, b, a;
     };
+
+    using colori = color<uint8_t>;
+    using colorf = color<float>;
+
     struct image {
         image() = default;
         image(image const &) = default;
@@ -548,14 +549,10 @@ namespace {
             }
         }
     }
+
 }
 
 int main(int argc, char ** argv) {
-    auto get_num = [] {
-        auto num = unsigned{};
-        std::cin >> num;
-        return num;
-    };
     //dump_material_names();
     return EXIT_SUCCESS;
 }
