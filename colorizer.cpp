@@ -17,7 +17,7 @@
 
 #include "image.hpp"
 
-namespace {
+namespace nl {
     void colorizer(path p_file) {
         ifstream file{p_file};
         string line;
@@ -25,22 +25,57 @@ namespace {
         auto maker = [](char const * p_str) {
             return regex{p_str, regex_constants::ECMAScript | regex_constants::optimize};
         };
+        imagef img;
         vector<pair<regex, function<void()>>> regs =
         {
-            {maker("[[:s:]]*start[[:s:]]+([[:d:]]+)[[:s:]]*"), [&]() {
-                auto size = stol(mat[1]);
+            {maker(R"/(\s*start\s+(\d+)\s+(\d+)\s*)/"), [&]() {
+                img.clear(stol(mat[1]), stol(mat[2]));
             }},
-            {maker("[[:s:]]*out[[:s:]]+\"([^\"]+)\"[[:s:]]*"), [&]() {
+            {maker(R"/(\s*out\s+"([^"]+)"\s*)/"), [&]() {
                 path outp{mat[1]};
+                img.save(outp);
             }},
-            {maker(""), [&]() {
+            {maker(R"/(\s*in\s+"([^"]+)"\s+#([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})\s*)/"), [&]() {
+                path inp{mat[1]};
+                auto r = static_cast<uint8_t>(stol(mat[2], nullptr, 16));
+                auto g = static_cast<uint8_t>(stol(mat[3], nullptr, 16));
+                auto b = static_cast<uint8_t>(stol(mat[4], nullptr, 16));
+                auto a = static_cast<uint8_t>(stol(mat[5], nullptr, 16));
+                auto c = static_cast<colorf>(colori{r, g, b, a});
+                imagef::temp.load(inp);
+                imagef::temp *= c;
+                img += imagef::temp;
+            }},
+            {maker(R"/(\s*in\s+"([^"]+)"\s+#([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})\s*)/"), [&]() {
+                path inp{mat[1]};
+                auto r = static_cast<uint8_t>(stol(mat[2], nullptr, 16));
+                auto g = static_cast<uint8_t>(stol(mat[3], nullptr, 16));
+                auto b = static_cast<uint8_t>(stol(mat[4], nullptr, 16));
+                auto c = static_cast<colorf>(colori{r, g, b, 0xff});
+                imagef::temp.load(inp);
+                imagef::temp *= c;
+                img += imagef::temp;
+            }},
+            {maker(R"/(\s*in\s+"([^"]+)"\s*)/"), [&]() {
+                path inp{mat[1]};
+                imagef::temp.load(inp);
+                img += imagef::temp;
+            }},
+            {maker(R"/(\s*)/"), [&]() {
                 cout << "Blank line" << endl;
+            }},
+            {maker(R"/(.*)/"), [&]() {
+                cout << "Invalid line" << endl;
             }}
         };
         while (getline(file, line)) {
             for (auto & r : regs) {
                 if (regex_match(line, mat, r.first)) {
-                    r.second();
+                    try {
+                        r.second();
+                    } catch (exception & e) {
+                        cerr << e.what() << endl;
+                    }
                     break;
                 }
             }
@@ -49,8 +84,9 @@ namespace {
 }
 
 int wmain(int argc, wchar_t ** argv) {
-    wstring_convert<codecvt_utf8<wchar_t>> convert;
-    for_each(argv + 1, argv + argc, [&](wchar_t * p_str) {
-        colorizer(convert.to_bytes(p_str));
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> convert;
+    std::for_each(argv + 1, argv + argc, [&](wchar_t * p_str) {
+        nl::colorizer(convert.to_bytes(p_str));
     });
+    return 0;
 }
