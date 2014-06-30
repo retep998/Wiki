@@ -591,8 +591,8 @@ void generate() {
         atlas.insert(img, block.x, block.y);
         out << "a[href|=\"/" << img_path.stem()
             << "\"]{display:block;clear:none;float:left;background-image:url(%%emotes%%);width:"
-            << img.width << "px;height:" << img.height << "px;background-position:-" << block.x << "px -"
-            << block.y << "px;}" << endl;
+            << img.width << "px;height:" << img.height << "px;background-position:-" << block.x
+            << "px -" << block.y << "px;}" << endl;
     }
     atlas.save(path / "emotes.png");
 }
@@ -600,6 +600,9 @@ void generate() {
 }
 
 int main(int argc, char **argv) {
-    emotes::generate();
+    string modname;
+    cout << "Mod name: " << flush;
+    cin >> modname;
+    update_tilesheet(modname);
     return EXIT_SUCCESS;
 }
